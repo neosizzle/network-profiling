@@ -1,0 +1,581 @@
+/**
+@page sockperf
+   SockPerf is a tool for network performance measurement written in C++.
+
+
+@section _summary 1. SUMMARY
+
+   SockPerf is a network testing tool oriented to measure network latency and
+   also spikes of network latency. Tool can create UDP/TCP data streams and
+   measure the throughput and latency of a network that is carrying them.
+   SockPerf allows the user to define different parameters that can be used for
+   testing a network, or alternately for optimizing or tuning a network.
+   Tool provides a client and server functionality, and can measure the throughput
+   and latency between the two end-points, either unidirectionally or bidirectionally.
+   This utility can be used in Linux systems.
+
+@section _introduction 2. INTRODUCTION
+
+   People are often concerned about measuring the maximum data throughput rate of
+   a communications link or network access. A typical method of performing a
+   measurement is to transfer a 'large' file and measure the time taken to do so.
+   The throughput is then calculated by dividing the file size by the time to get
+   the throughput in megabits, kilobits, or bits per second.
+   Unfortunately, the results of such an exercise will result in the goodput which
+   is less than the maximum throughput, leading to people believing that their communications
+   link is not operating correctly. In fact, there are many overheads accounted for
+   in good case in addition to transmission overheads, including latency,
+   TCP Receive Window size and machine limitations, which means the calculated
+   goodput does not reflect the maximum achievable throughput.
+
+   Another important thing of tool capacity is latency measurement. Latency - is the
+   time it takes packet to go from user space program on one machine to user space program
+   on another machine.
+   Being able to quantify latency in terms other than millisecond response time is
+   important when determining the quality of a network. One of available tool that can help
+   administrators do just that is Sockperf.
+
+   SockPerf works as an on-demand client and server test. How this works is that one system runs
+   the Sockperf server over a specified port and another system functions as a client running
+   the Sockperf client. The binaries are the same, and there is an option to have the role
+   of client or server, so the roles can easily be reversed if necessary.
+
+@section _overview 3. OVERVIEW
+
+   Sockperf tests UDP/TCP network connection and maintenance following functionality:
+   - Measure latency;
+   - Measure TX/RX bandwidth;
+   - Measure packet loss;
+   - Multicast;
+   - Multi-threaded;
+
+   features:
+   - Measure the RTT of packets in descrete way;
+   - Provide full log of packet times;
+   - Provide few modes to monitor multiple file descriptors as recvfrom/select/poll/epoll;
+   - Improved CPU utilization;
+
+   Initially the tool was developed to demonstrate advantages of Mellanox's Messaging Accelerator (VMA).
+   VMA is a socket API based, dynamically linked, user space Linux library which serves to
+   transparently enhance the performance of Multicast/UDP/TCP networking heavy applications over
+   the InfiniBand and Ethernet network.
+   More interested user can read detail information at http://www.mellanox.com.
+   Actually Sockperf can be used natively, or with VMA acceleration and see the benefit of VMA.
+
+   SockPerf operates by sending packets from the client to the server, which then sends
+   the packets back to the client. This measured round trip time is the route trip time (RTT)
+   between the two machines on a specific network path.
+   The average RTT is calculated by dividing the total number of packets that perform this
+   round trip by some fixed period of time. The average latency for a given one-way path
+   between the two machines is the average RTT divided by two.
+
+   SockPerf can work as server or execute under-load, ping-pong, playback and throughput tests and
+   be a server or a client.
+
+   SockPerf can be launched in single point manner that is name as the first mode and using special
+   formatted feed file named as the second mode.
+
+   Mode One:
+@code
+$sockperf server -i 224.18.7.81 -p 5001
+sockperf: == version #3.5-no.git ==
+sockperf: [SERVER] listen on:
+[ 0] IP = 224.18.7.81     PORT =  5001 # UDP
+sockperf: Warmup stage (sending a few dummy messages)...
+sockperf: [tid 4701] using recvfrom() to block on socket(s
+@endcode
+
+   Mode Two:
+@code
+$sockperf server -f conf.file -F e
+sockperf: == version #3.5-no.git ==
+sockperf: [SERVER] listen on:
+[ 0] IP = 5.2.1.3        PORT =  6671 # TCP
+[ 1] IP = 5.2.1.3        PORT =  6672 # TCP
+[ 2] IP = 5.2.1.3        PORT =  6673 # TCP
+[ 3] IP = 5.2.1.3        PORT =  6674 # TCP
+[ 4] IP = 5.2.1.3        PORT =  6675 # TCP
+sockperf: Warmup stage (sending a few dummy messages)...
+sockperf: [tid 4805] using epoll() to block on socket(s)
+@endcode
+
+   Every line in feed file should have following format as
+   [U|T]:address:port
+   or
+   [U|T]:address:port:mc_src_addr
+   or
+   [U|T]:PATH
+   where
+   - [U|T] - UDP or TCP protocol;
+   - address - Internet Protocol (IP) address or host name (IPv6 addresses must be enclosed in square brackets);
+   - port - Port number;
+   - mc_src_addr - Optional multicast source IP address or host name.
+   - PATH - absolute path for UNIX Domain Socket
+            Linux - line must start with '/'
+            Windows - line must start with absoulte path including directory, e.g 'c:\tmp\test'
+
+
+@subsection _option 3.1 Available options
+
+   The following table describes Sockperf options, and their possible values:
+@code
+ -h,-?   --help,--usage         -Show the help message and exit.
+         --tcp --stream         -Use stream socket/TCP protocol (default dgram socket/UDP protocol).
+ -i      --ip --addr            -Listen on/send to ip <ip> or address <name>.
+ -p      --port                 -Listen on/connect to port <port> (default 11111).
+ -f      --file                 -Read list of connections from file (used in pair with -F option).
+ -F      --iomux-type           -Type of multiple file descriptors handle [s|select|p|poll|e|epoll|r|recvfrom|x|socketxtreme](default epoll).
+         --timeout              -Set select/poll/epoll timeout to <msec>, -1 for infinite (default is 10 msec).
+ -a      --activity             -Measure activity by printing a '.' for the last <N> messages processed.
+ -A      --Activity             -Measure activity by printing the duration for last <N>  messages processed.
+         --tcp-avoid-nodelay    -Stop/Start delivering TCP Messages Immediately (Enable/Disable Nagel). Default is Nagel Disabled except in Throughput where the default is Nagel enabled.
+         --tcp-skip-blocking-send
+                                -Enables non-blocking send operation (default OFF).
+         --tos                  -Allows setting tos
+         --mc-rx-ip,--mc-rx-if  -Use mc-rx-ip (IPv4) / mc-rx-if (IPv6). Set ipv4 address / interface index of interface on which to receive multicast messages (can be other then route table).
+         --mc-tx-ip,--mc-tx-if  -Use mc-tx-ip (IPv4) / mc-tx-if (IPv6). Set ipv4 address / interface index of interface on which to transmit multicast messages (can be other then route table).
+         --mc-loopback-enable   -Enables mc loopback (default disabled).
+         --mc-ttl               -Limit the lifetime of the message (default 2).
+         --mc-source-filter     -Set address <ip, hostname> of multicast messages source which is allowed to receive from.
+         --uc-reuseaddr         -Enables unicast reuse address (default disabled).
+         --lls                  -Turn on LLS via socket option (value = usec to poll).
+         --buffer-size          -Set total socket receive/send buffer <size> in bytes (system defined by default).
+         --nonblocked           -Open non-blocked sockets.
+         --recv_looping_num     -Set sockperf to loop over recvfrom() until EAGAIN or <N> good received packets, -1 for infinite, must be used with --nonblocked (default 1).
+         --dontwarmup           -Don't send warm up messages on start.
+         --pre-warmup-wait      -Time to wait before sending warm up messages (seconds).
+         --zcopyread
+                                -Use zero copy reads API (See VMA/XLIO readme).
+         --daemonize            -Run as daemon.
+         --no-rdtsc             -Don't use register when taking time; instead use monotonic clock.
+         --load-vma             -Load VMA dynamically even when LD_PRELOAD was not used.
+         --load-xlio            -Load XLIO dynamically even when LD_PRELOAD was not used.
+         --rate-limit           -use rate limit (packet-pacing), with VMA must be run with VMA_RING_ALLOCATION_LOGIC_TX mode.
+         --set-sock-accl        -Set socket acceleration before run (available for some of Mellanox systems)
+ -d      --debug                -Print extra debug information.
+@endcode
+
+@subsection _server 3.2 Server
+
+   Server options are:
+@code
+         --threads-num          -Run <N> threads on server side (requires '-f' option).
+         --cpu-affinity         -Set threads affinity to the given core ids in list format (see: cat /proc/cpuinfo).
+         --rxfiltercb
+                                -Use receive path message filter callback API (See VMA/XLIO readme).
+         --force-unicast-reply  -Force server to reply via unicast.
+         --dont-reply           -Server won't reply to the client messages.
+ -m      --msg-size             -Set maximum message size that the server can receive <size> bytes (default 65507).
+ -g      --gap-detection        -Enable gap-detection.
+@endcode
+
+@subsection _client 3.3 Client
+
+   Sockperf supports different scenarios to run itself as a client. There are under-load,
+   ping-pong, playback and throughput subcommands to select one of the scenarios.
+
+   - under-load - run sockperf client for latency under load test;
+   - ping-pong - run sockperf client for latency test in ping pong mode;
+   - playback - run sockperf client for latency test using playback of predefined
+                traffic, based on timeline and message size;
+   - throughput - run sockperf client for one way throughput test;
+
+   General client options are:
+@code
+         --sender-affinity      -Set sender thread affinity to the given core ids in list format (see: cat /proc/cpuinfo).
+         --receiver-affinity    -Set receiver thread affinity to the given core ids in list format (see: cat /proc/cpuinfo).
+         --full-log             -Dump full log of all messages send/receive time to the given file in CSV format.
+         --full-rtt             -Show results in round-trip-time instead of latency.
+         --giga-size            -Print sizes in GigaByte.
+         --increase_output_precision
+                                -Increase number of digits after decimal point of the throughput output (from 3 to 9).
+         --dummy-send           -Use VMA's dummy send API instead of busy wait, must be higher than regular msg rate.
+                                 optional: set dummy-send rate per second (default 10,000), usage: --dummy-send [<rate>|max]
+ -t      --time                 -Run for <sec> seconds (default 1, max = 36000000).
+ -n      --number-of-packets    -Run for n packets sent and received (default 0, max = 100000000).
+         --client_port          -Force the client side to bind to a specific port (default = 0).
+         --client_addr          -Force the client side to bind to a specific address in IPv4, IPv6, UNIX domain socket format (default = 0).
+ -b      --burst                -Control the client's number of a messages sent in every burst.
+         --mps                  -Set number of messages-per-second (default = 10000 - for under-load mode, or max - for ping-pong and throughput modes; for maximum use --mps=max;
+                                 support --pps for old compatibility).
+ -m      --msg-size             -Use messages of size <size> bytes (minimum default 14).
+ -r      --range                -comes with -m <size>, randomly change the messages size in range: <size> +- <N>.
+         --data-integrity       -Perform data integrity test.
+         --ci_sig_level         -Normal confidence interval significance level for stat reported. Values are between 0 and 100 exclusive (default 99).
+         --histogram            -Build histogram of latencies. Histogram arguments formated as binsize:lowerrange:upperrange
+@endcode
+
+@subsection _tool 3.4 Tools
+
+   SockPerf package contains few scripts that allow to generate special formatted file to launch tool in
+   different configurations.
+   - filter.awk - can be used for filtering lines from the full log file based on given latency range;
+   - gen1.awk - this awk script generates playback files (it is for stable PPS playback file);
+   - gen2.awk - this awk script generates playback files using  the input for this script is file with lines of the format:
+                startTime; duration; startPPS; endPPS; msgSize (it is for linear increased and decreased PPS playback file);
+
+@code
+   create playback file using gen1.awk > pfile
+   generated file:
+# ==== playback file for sockperf - generated by gen1.awk ====
+#baseTime=1.000000; PPS=200000; runtime=1.000000; interval=0.000005; NUM_RECORDS=200000
+# file contains 200000 records
+1.000005000, 12
+1.000010000, 12
+1.000015000, 12
+1.000020000, 12
+1.000025000, 12
+1.000030000, 12
+1.000035000, 12
+1.000040000, 12
+...
+1.999950000, 12
+1.999955000, 12
+1.999960000, 12
+1.999965000, 12
+1.999970000, 12
+1.999975000, 12
+1.999980000, 12
+1.999985000, 12
+1.999990000, 12
+1.999995000, 12
+2.000000000, 12
+#200000 records were written successfully
+   start server on ipX
+   start client using: ./sockperf ping-pong -i <ip-address> -p <port> --playback=pfile
+@endcode
+
+@subsection _usage 3.5 Usage
+
+@subsection _usage1 3.5.1 Running Multicast over IPoIB
+
+- Configure the routing table to map multicast addresses to the IPoIB interface on
+both client and server machines, as follows:
+@code
+route add -net 224.0.0.0 netmask 240.0.0.0 dev ib0
+@endcode
+In this case, ib0 is the IPoIB interface.
+
+- Run the server as follows:
+@code
+$sockperf server -i 224.18.7.81 -p 5001
+sockperf: == version #3.5-no.git ==
+sockperf: [SERVER] listen on:
+[ 0] IP = 224.18.7.81     PORT =  5001 # UDP
+sockperf: Warmup stage (sending a few dummy messages)...
+sockperf: [tid 30399] using recvfrom() to block on socket(s)
+@endcode
+
+- Run the client as follows:
+@code
+$sockperf ping-pong -i 224.18.7.81 -p 5001 -m 16384 -t 10 --mps=max
+sockperf: == version #3.5-no.git ==
+sockperf[CLIENT] send on:sockperf: using recvfrom() to block on socket(s)
+
+[ 0] IP = 224.18.7.81     PORT =  5001 # UDP
+sockperf: Warmup stage (sending a few dummy messages)...
+sockperf: Starting test...
+sockperf: Test end (interrupted by timer)
+sockperf: Test ended
+sockperf: [Total Run] RunTime=10.000 sec; Warm up time=400 msec; SentMessages=240464; ReceivedMessages=240463
+sockperf: ========= Printing statistics for Server No: 0
+sockperf: [Valid Duration] RunTime=9.550 sec; SentMessages=229630; ReceivedMessages=229630
+sockperf: ====> avg-lat= 20.771 (std-dev=5.266)
+sockperf: # dropped messages = 0; # duplicated messages = 0; # out-of-order messages = 0
+sockperf: Summary: Latency is 20.771 usec
+sockperf: Total 229630 observations; each percentile contains 2296.30 observations
+sockperf: ---> <MAX> observation =  120.108
+sockperf: ---> percentile 99.999 =  106.349
+sockperf: ---> percentile 99.990 =   63.772
+sockperf: ---> percentile 99.900 =   55.940
+sockperf: ---> percentile 99.000 =   48.619
+sockperf: ---> percentile 90.000 =   24.295
+sockperf: ---> percentile 75.000 =   20.358
+sockperf: ---> percentile 50.000 =   19.279
+sockperf: ---> percentile 25.000 =   18.641
+sockperf: ---> <MIN> observation =   16.748
+@endcode
+
+@subsection _usage2 3.5.2 Running TCP over Ethernet
+
+- Run the server as follows:
+@code
+$sockperf server -i 22.0.0.3 -p 5001 --tcp
+sockperf: == version #3.5-no.git ==
+sockperf: [SERVER] listen on:
+[ 0] IP = 22.0.0.3        PORT =  5001 # TCP
+sockperf: Warmup stage (sending a few dummy messages)...
+sockperf: [tid 1567] using recvfrom() to block on socket(s)
+@endcode
+
+- Run the client as follows:
+@code
+$sockperf ping-pong -i 22.0.0.3 -p 5001 --tcp -m 64 -t 10 --mps=max
+sockperf: == version #3.5-no.git ==
+sockperf[CLIENT] send on:sockperf: using recvfrom() to block on socket(s)
+
+[ 0] IP = 22.0.0.3        PORT =  5001 # TCP
+sockperf: Warmup stage (sending a few dummy messages)...
+sockperf: Starting test...
+sockperf: Test end (interrupted by timer)
+sockperf: Test ended
+sockperf: [Total Run] RunTime=10.000 sec; Warm up time=400 msec; SentMessages=553625; ReceivedMessages=553624
+sockperf: ========= Printing statistics for Server No: 0
+sockperf: [Valid Duration] RunTime=9.550 sec; SentMessages=528579; ReceivedMessages=528579
+sockperf: ====> avg-lat=  9.017 (std-dev=4.171)
+sockperf: # dropped messages = 0; # duplicated messages = 0; # out-of-order messages = 0
+sockperf: Summary: Latency is 9.017 usec
+sockperf: Total 528579 observations; each percentile contains 5285.79 observations
+sockperf: ---> <MAX> observation =   98.777
+sockperf: ---> percentile 99.999 =   72.628
+sockperf: ---> percentile 99.990 =   17.980
+sockperf: ---> percentile 99.900 =   16.824
+sockperf: ---> percentile 99.000 =   16.193
+sockperf: ---> percentile 90.000 =   14.731
+sockperf: ---> percentile 75.000 =   14.301
+sockperf: ---> percentile 50.000 =    6.222
+sockperf: ---> percentile 25.000 =    5.759
+sockperf: ---> <MIN> observation =    4.629
+@endcode
+
+@subsection _usage3 3.5.3 Running UDP over Ethernet using VMA
+
+- More interested user can read detail information about VMA at http://www.mellanox.com.
+- VMA_SPEC=latency is a predefined specification profile for latency.
+
+- Run the server as follows:
+@code
+$VMA_SPEC=latency LD_PRELOAD=libvma.so sockperf server -i 22.0.0.3 -p 5001
+ VMA INFO: ---------------------------------------------------------------------------
+ VMA INFO: VMA_VERSION: 8.6.10-0 Development Snapshot built on Jun 27 2018 16:06:47
+ VMA INFO: Cmd Line: sockperf server -i 22.0.0.3 -p 5001
+ VMA INFO: Current Time: Tue Sep 18 08:49:23 2018
+ VMA INFO: Pid:  2201
+ VMA INFO: OFED Version: MLNX_OFED_LINUX-4.4-1.0.0.0:
+ VMA INFO: Architecture: x86_64
+ VMA INFO: Node: r-aa-apollo03.mtr.labs.mlnx
+ VMA INFO: ---------------------------------------------------------------------------
+ VMA INFO: VMA Spec                       Latency                    [VMA_SPEC]
+ VMA INFO: Log Level                      INFO                       [VMA_TRACELEVEL]
+ VMA INFO: Ring On Device Memory TX       16384                      [VMA_RING_DEV_MEM_TX]
+ VMA INFO: Tx QP WRE                      256                        [VMA_TX_WRE]
+ VMA INFO: Tx QP WRE Batching             4                          [VMA_TX_WRE_BATCHING]
+ VMA INFO: Rx QP WRE                      256                        [VMA_RX_WRE]
+ VMA INFO: Rx QP WRE Batching             4                          [VMA_RX_WRE_BATCHING]
+ VMA INFO: Rx Poll Loops                  -1                         [VMA_RX_POLL]
+ VMA INFO: Rx Prefetch Bytes Before Poll  256                        [VMA_RX_PREFETCH_BYTES_BEFORE_POLL]
+ VMA INFO: GRO max streams                0                          [VMA_GRO_STREAMS_MAX]
+ VMA INFO: Select Poll (usec)             -1                         [VMA_SELECT_POLL]
+ VMA INFO: Select Poll OS Force           Enabled                    [VMA_SELECT_POLL_OS_FORCE]
+ VMA INFO: Select Poll OS Ratio           1                          [VMA_SELECT_POLL_OS_RATIO]
+ VMA INFO: Select Skip OS                 1                          [VMA_SELECT_SKIP_OS]
+ VMA INFO: CQ Drain Interval (msec)       100                        [VMA_PROGRESS_ENGINE_INTERVAL]
+ VMA INFO: CQ Interrupts Moderation       Disabled                   [VMA_CQ_MODERATION_ENABLE]
+ VMA INFO: CQ AIM Max Count               128                        [VMA_CQ_AIM_MAX_COUNT]
+ VMA INFO: CQ Adaptive Moderation         Disabled                   [VMA_CQ_AIM_INTERVAL_MSEC]
+ VMA INFO: CQ Keeps QP Full               Disabled                   [VMA_CQ_KEEP_QP_FULL]
+ VMA INFO: TCP nodelay                    1                          [VMA_TCP_NODELAY]
+ VMA INFO: Avoid sys-calls on tcp fd      Enabled                    [VMA_AVOID_SYS_CALLS_ON_TCP_FD]
+ VMA INFO: Internal Thread Affinity       0                          [VMA_INTERNAL_THREAD_AFFINITY]
+ VMA INFO: Thread mode                    Single                     [VMA_THREAD_MODE]
+ VMA INFO: Mem Allocate type              2 (Huge Pages)             [VMA_MEM_ALLOC_TYPE]
+ VMA INFO: ---------------------------------------------------------------------------
+sockperf: == version #3.5-no.git ==
+sockperf: [SERVER] listen on:
+[ 0] IP = 22.0.0.3        PORT =  5001 # UDP
+sockperf: Warmup stage (sending a few dummy messages)...
+sockperf: [tid 2201] using recvfrom() to block on socket(s)
+@endcode
+
+- Run the client as follows:
+@code
+$VMA_SPEC=latency LD_PRELOAD=libvma.so sockperf ping-pong -i 22.0.0.3 -p 5001 -m 64 -t 10 --mps=max
+ VMA INFO: ---------------------------------------------------------------------------
+ VMA INFO: VMA_VERSION: 8.6.10-0 Development Snapshot built on Jun 27 2018 16:06:47
+ VMA INFO: Cmd Line: sockperf ping-pong -i 22.0.0.3 -p 5001 -m 64 -t 10 --mps=max
+ VMA INFO: Current Time: Tue Sep 18 08:47:50 2018
+ VMA INFO: Pid: 20134
+ VMA INFO: OFED Version: MLNX_OFED_LINUX-4.4-1.0.0.0:
+ VMA INFO: Architecture: x86_64
+ VMA INFO: Node: r-aa-apollo04.mtr.labs.mlnx
+ VMA INFO: ---------------------------------------------------------------------------
+ VMA INFO: VMA Spec                       Latency                    [VMA_SPEC]
+ VMA INFO: Log Level                      INFO                       [VMA_TRACELEVEL]
+ VMA INFO: Ring On Device Memory TX       16384                      [VMA_RING_DEV_MEM_TX]
+ VMA INFO: Tx QP WRE                      256                        [VMA_TX_WRE]
+ VMA INFO: Tx QP WRE Batching             4                          [VMA_TX_WRE_BATCHING]
+ VMA INFO: Rx QP WRE                      256                        [VMA_RX_WRE]
+ VMA INFO: Rx QP WRE Batching             4                          [VMA_RX_WRE_BATCHING]
+ VMA INFO: Rx Poll Loops                  -1                         [VMA_RX_POLL]
+ VMA INFO: Rx Prefetch Bytes Before Poll  256                        [VMA_RX_PREFETCH_BYTES_BEFORE_POLL]
+ VMA INFO: GRO max streams                0                          [VMA_GRO_STREAMS_MAX]
+ VMA INFO: Select Poll (usec)             -1                         [VMA_SELECT_POLL]
+ VMA INFO: Select Poll OS Force           Enabled                    [VMA_SELECT_POLL_OS_FORCE]
+ VMA INFO: Select Poll OS Ratio           1                          [VMA_SELECT_POLL_OS_RATIO]
+ VMA INFO: Select Skip OS                 1                          [VMA_SELECT_SKIP_OS]
+ VMA INFO: CQ Drain Interval (msec)       100                        [VMA_PROGRESS_ENGINE_INTERVAL]
+ VMA INFO: CQ Interrupts Moderation       Disabled                   [VMA_CQ_MODERATION_ENABLE]
+ VMA INFO: CQ AIM Max Count               128                        [VMA_CQ_AIM_MAX_COUNT]
+ VMA INFO: CQ Adaptive Moderation         Disabled                   [VMA_CQ_AIM_INTERVAL_MSEC]
+ VMA INFO: CQ Keeps QP Full               Disabled                   [VMA_CQ_KEEP_QP_FULL]
+ VMA INFO: TCP nodelay                    1                          [VMA_TCP_NODELAY]
+ VMA INFO: Avoid sys-calls on tcp fd      Enabled                    [VMA_AVOID_SYS_CALLS_ON_TCP_FD]
+ VMA INFO: Internal Thread Affinity       0                          [VMA_INTERNAL_THREAD_AFFINITY]
+ VMA INFO: Thread mode                    Single                     [VMA_THREAD_MODE]
+ VMA INFO: Mem Allocate type              2 (Huge Pages)             [VMA_MEM_ALLOC_TYPE]
+ VMA INFO: ---------------------------------------------------------------------------
+sockperf: == version #3.5-no.git ==
+sockperf[CLIENT] send on:sockperf: using recvfrom() to block on socket(s)
+
+[ 0] IP = 22.0.0.3        PORT =  5001 # UDP
+sockperf: Warmup stage (sending a few dummy messages)...
+sockperf: Starting test...
+sockperf: Test end (interrupted by timer)
+sockperf: Test ended
+sockperf: [Total Run] RunTime=10.000 sec; Warm up time=400 msec; SentMessages=5166035; ReceivedMessages=5166034
+sockperf: ========= Printing statistics for Server No: 0
+sockperf: [Valid Duration] RunTime=9.550 sec; SentMessages=4951987; ReceivedMessages=4951987
+sockperf: ====> avg-lat=  0.951 (std-dev=0.034)
+sockperf: # dropped messages = 0; # duplicated messages = 0; # out-of-order messages = 0
+sockperf: Summary: Latency is 0.951 usec
+sockperf: Total 4951987 observations; each percentile contains 49519.87 observations
+sockperf: ---> <MAX> observation =    4.476
+sockperf: ---> percentile 99.999 =    1.318
+sockperf: ---> percentile 99.990 =    1.270
+sockperf: ---> percentile 99.900 =    1.179
+sockperf: ---> percentile 99.000 =    1.110
+sockperf: ---> percentile 90.000 =    0.967
+sockperf: ---> percentile 75.000 =    0.952
+sockperf: ---> percentile 50.000 =    0.943
+sockperf: ---> percentile 25.000 =    0.936
+sockperf: ---> <MIN> observation =    0.895
+@endcode
+
+@section _licensing 4. LICENSING
+
+  Read "copying" file in the root place.
+
+@section _installation 5. INSTALLATION
+
+@subsection _requirements 5.1 Requirements
+
+What you will need to compile sockperf on Unix systems
+
+   - perl 5.8+ (used by the automake tools)
+
+   - GNU make tools: automake 1.7+, autoconf 2.57+, m4 1.4+ and libtool 1.4+
+
+   - A Compiler, among those tested are:
+      - gcc4+ (Ubuntu)
+      - gcc4+ (Red Hat)
+
+@subsection _options 5.2 Options to compile
+
+
+@subsection _install 5.3 How to install
+
+   Download sockperf-\<version\>.tar.gz.
+
+   Uncompress *.tar.gz file in Unix systems in the same folder with the file
+   by runing the following command in the shell:
+@code
+   tar -zxvf sockperf-<version>.tar.gz
+@endcode
+   or 2 command:
+@code
+   gzip -d ./sockperf-<version>.tar.gz
+   tar -xf ./sockperf-<version>.tar
+@endcode
+
+  The sockperf package uses the GNU autotools compilation and installation
+  framework.
+
+  These are generic installation instructions.
+
+   The `configure' shell script attempts to guess correct values for
+various system-dependent variables used during compilation.  It uses
+those values to create a `Makefile' in each directory of the package.
+It may also create one or more `.h' files containing system-dependent
+definitions.  Finally, it creates a shell script `config.status' that
+you can run in the future to recreate the current configuration, a file
+`config.cache' that saves the results of its tests to speed up
+reconfiguring, and a file `config.log' containing compiler output
+(useful mainly for debugging `configure').
+
+   If you need to do unusual things to compile the package, please try
+to figure out how `configure' could check whether to do them, and mail
+diffs or instructions to the address given in the `README' so they can
+be considered for the next release.  If at some point `config.cache'
+contains results you don't want to keep, you may remove or edit it.
+
+   The file `configure.in' is used to create `configure' by a program
+called `autoconf'.  You only need `configure.in' if you want to change
+it or regenerate `configure' using a newer version of `autoconf'.
+
+The simplest way to compile this package is:
+
+  1. `cd' to the directory containing the package's source code and type
+     `./configure' to configure the package for your system.  If you're
+     using `csh' on an old version of System V, you might need to type
+     `sh ./configure' instead to prevent `csh' from trying to execute
+     `configure' itself.
+
+     Running `configure' takes awhile.  While running, it prints some
+     messages telling which features it is checking for.
+@code
+    $ ./configure --prefix=<path to install>
+@endcode
+
+   There are several options to ./config (or ./Configure) to customize
+   the build:
+
+  To enable test scripts
+@code
+    $ ./configure --prefix=<path to install> --enable-test
+@endcode
+
+  To enable the documentation
+@code
+    $ ./configure --prefix=<path to install> --enable-doc
+@endcode
+
+  To enable the special scripts
+@code
+    $ ./configure --prefix=<path to install> --enable-tool
+@endcode
+
+  To compile with debug symbols and information:
+@code
+    $ ./configure --prefix=<path to install> --enable-debug
+@endcode
+
+   This will define the _DEBUG variable at compile time.
+
+   Type './configure --help' for a list of all the configure
+   options. Some of the options are generic autoconf options, while the SockPerf
+   specific options are prefixed with "SOCKPERF:" in the help text.
+
+  2. Type `make' to compile the package.
+@code
+    $ make
+@endcode
+
+  3. Optionally, type `make check' to run any self-tests that come with
+     the package.
+
+  4. Type `make install' to install the programs and any data files and
+     documentation.
+@code
+    $ make install
+@endcode
+
+  5. You can remove the program binaries and object files from the
+     source code directory by typing `make clean'.  To also remove the
+     files that `configure' created (so you can compile the package for
+     a different kind of computer), type `make distclean'.  There is
+     also a `make maintainer-clean' target, but that is intended mainly
+     for the package's developers.  If you use it, you may have to get
+     all sorts of other programs in order to regenerate files that came
+     with the distribution.
+
+*/
