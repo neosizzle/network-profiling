@@ -172,6 +172,7 @@ geekbench5() {
 	GEEKBENCH_SCORES_MULTI=$(curl -s $GEEKBENCH_URL | grep "class='score'" | head -2 | tr -d \'\" | sed 's/class=score//g' | sed "s/ //g" | sed -n 's:.*<div>\(.*\)</div>.*:\1:p' | sed -n 2p)
 	echo -ne "\e[1A"; echo -ne "\033[0K\r"
 	echo -e "Geekbench v5"
+	echo -e "Geekbench is not well validated, just gives a big picture: $GEEKBENCH_URL"
 	echo -e "Single Core          :" ${BLUE} $GEEKBENCH_SCORES_SINGLE ${PLAIN}
 	echo -e "Multi Core           :" ${YELLOW} $GEEKBENCH_SCORES_MULTI ${PLAIN}
 	rm -rf geekbench/
