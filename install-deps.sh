@@ -10,5 +10,8 @@ cd socketperf
 sudo make && sudo make install
 cd $curr_dir
 
+# user-tls-handshake-perf
+sudo apt install -y openssl-devel
+
 # ptuning
 sudo apt install ethtool gawk -y
