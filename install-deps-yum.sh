@@ -4,8 +4,8 @@ curr_dir=$(pwd)
 sudo yum install dialog ca-certificates jq curl fio wget -y
 
 # sockperf
-sudo yum install libtool autoconf -y
-cd sockperf
+sudo yum install libtool autoconf g++ -y
+cd socketperf
 ./autogen.sh && ./configure
 sudo make && sudo make install
 cd $curr_dir
