@@ -1,7 +1,7 @@
 curr_dir=$(pwd)
 
 # sysperf
-sudo yum install dialog ca-certificates jq curl fio wget -y
+sudo yum install ca-certificates jq curl fio wget -y --allowerasing
 
 # sockperf
 sudo yum install libtool autoconf g++ -y
