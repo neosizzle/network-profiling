@@ -11,8 +11,27 @@ cat /sys/devices/system/cpu/smt/active
 
 # TODO check if can overclock prod processors (no xeon)
 
+# [TWEAK NEEDED]
+# nohz_full - disable timers on core
+# rch_nocb - disable rcu callbacks (for queuing lock operations) on core
 # isolcpu - isolate cores from kernel scheduler [REBOOT NEEDED]
+# mitigations - disable CPU security mitigations
 # use cat /proc/cmdline to verify
-sudo sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/"\(.*\)"/"\1 isolcpus=1-7"/' /etc/default/grub
+sudo sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/"\(.*\)"/"\1 isolcpus=1-7 nohz_full=1-7 rcu_nocbs=1-7 mitigations=off"/' /etc/default/grub
 sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 
+# Try to move all kernel threads and workqueues to core 0:
+sudo pgrep -P 2 | xargs -i taskset -p -c 0 {}
+find /sys/devices/virtual/workqueue -name cpumask  -exec sh -c 'echo 1 > {}' ';'
+
+# disable sqap to redice pagefaults
+sudo swapoff -a
+
+# disable TLB, which makes kernel not promote normal pages into huge pages
+# this promotion causus latency spike
+sudo echo never > /sys/kernel/mm/transparent_hugepage/enabled
+
+# disable KSM, which is only enabled when madvise(..MADV_MERGEABLE) is used
+sudo echo 0 > /sys/kernel/mm/ksm/run
+
+echo "Please reboot instance to apply kernel parameters"
