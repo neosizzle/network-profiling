@@ -1,11 +1,12 @@
 # https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/monitoring_and_managing_system_status_and_performance/tuning-the-network-performance_monitoring-and-managing-system-status-and-performance
 # to check packet loss rate, run netstat -s | grep segments 
-adapter=wlp0s20f3
+echo -n "Please enter adapter name: "
+read adapter
 
 # Increase NIC and driver ring buffer size to prevent drop rate
 ethtool -S $adapter
 ethtool -g $adapter
-sudo ethtool -G ens5 rx 16384 # this value is AWS max size, we got 1024 by default
+sudo ethtool -G $adapter rx 16384 # this value is AWS max size, we got 1024 by default
 
 # these commands are unavail because amazon linux does not have networkanager in their mirrors
 # nmcli connection show
