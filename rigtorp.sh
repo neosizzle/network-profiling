@@ -19,7 +19,7 @@ sudo echo off > /sys/devices/system/cpu/smt/control
 # use cat /proc/cmdline to verify
 echo -n "Please enter maximum CPU ID: "
 read max_id
-sudo sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/"\(.*\)"/"\1 isolcpus=1-$max_id nohz_full=1-$max_id rcu_nocbs=1-$max_id mitigations=off"/' /etc/default/grub
+sudo sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/\"\(.*\)\"/\"\1 isolcpus=1-$max_id nohz_full=1-$max_id rcu_nocbs=1-$max_id mitigations=off\"/" /etc/default/grub
 sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 
 # Try to move all kernel threads and workqueues to core 0:
