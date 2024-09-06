@@ -1,4 +1,6 @@
 # https://rigtorp.se/low-latency-guide/
+# https://talawah.io/blog/extreme-http-performance-tuning-one-point-two-million
+
 
 # Hyper-threading (HT) or Simultaneous multithreading (SMT) is a technology to maximize processor resource usage for workloads with low instructions per cycle (IPC). Since HT/SMT increases contention on processor resources it’s recommended to turn it off if you want to reduce jitter introduced by contention on processor resources. Disabling HT / SMT has the additional benefit of doubling (in case of 2-way SMT) the effective L1 and L2 cache available to a thread.
 # [EXPERIMENTAL]
@@ -19,7 +21,7 @@ sudo echo off > /sys/devices/system/cpu/smt/control
 # use cat /proc/cmdline to verify
 echo -n "Please enter maximum CPU ID: "
 read max_id
-sudo sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/\"\(.*\)\"/\"\1 isolcpus=1-$max_id nohz_full=1-$max_id rcu_nocbs=1-$max_id mitigations=off\"/" /etc/default/grub
+sudo sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/\"\(.*\)\"/\"\1 isolcpus=1-$max_id nohz_full=1-$max_id rcu_nocbs=1-$max_id mitigations=off pti=off\"/" /etc/default/grub
 sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 
 # Try to move all kernel threads and workqueues to core 0:
