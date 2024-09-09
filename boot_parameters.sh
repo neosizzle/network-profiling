@@ -9,8 +9,9 @@
 # mitigations - disable CPU security mitigations
 # pti -  Control Page Table Isolation. removes hardening, but improves performance of system calls and interrupts.
 # use cat /proc/cmdline to verify
-echo -n "Please enter maximum CPU ID: "
-read max_id
-sudo sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/\"\(.*\)\"/\"\1 isolcpus=1-$max_id nohz_full=1-$max_id rcu_nocbs=1-$max_id mitigations=off pti=off\"/" /etc/default/grub
+# echo -n "Please enter maximum CPU ID: "
+# read max_id
+# sudo sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/\"\(.*\)\"/\"\1 isolcpus=1-$max_id nohz_full=1-$max_id rcu_nocbs=1-$max_id mitigations=off pti=off\"/" /etc/default/grub
+sudo sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/\"\(.*\)\"/\"\1 mitigations=off pti=off\"/" /etc/default/grub
 sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 echo "Please reboot instance to apply kernel parameters"
