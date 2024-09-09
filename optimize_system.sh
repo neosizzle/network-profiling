@@ -42,10 +42,10 @@ sudo swapoff -a
 # disable TLB, which makes kernel not promote normal pages into huge pages
 # this promotion causus latency spike
 # this is disabled by default already, so its OK
-sudo echo never > /sys/kernel/mm/transparent_hugepage/enabled
+sudo sh -c "echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled"
 
 # Disable iptables, NAT has overhead
-modprobe -rv ip_tables
+sudo modprobe -rv ip_tables
 
 # RSS
 
@@ -64,7 +64,7 @@ sudo ethtool -C $adapter tx-usecs 256
 
 # disable syscall auditing
 # sudo echo "-a never,task" > /etc/audit/rules.d/disable-syscall-auditing.rules
-sudo sh -c "echo '-a never,task' > /etc/audit/rules.d/audit.rules"
+sudo sh -c "echo '-D -a never,task' > /etc/audit/rules.d/audit.rules"
 sudo /sbin/augenrules --load
 
 # Disable ssm agent. It doesn't really affect throughput, but any network activity can affect p99 and stdev for latency
@@ -81,10 +81,11 @@ sudo systemctl disable amazon-ssm-agent
 # net.core.busy_poll=1
 # net.core.default_qdisc=noqueue
 # net.ipv4.tcp_congestion_control=reno
-cat > /etc/sysctl.d/90-extreme.conf <<- EOF
+sudo sh -c "cat > /etc/sysctl.d/90-extreme.conf <<- EOF
 vm.swappiness=0
 vm.dirty_ratio=80
 EOF
+"
 
 # Reload sysctl to pick up new configs
 sudo sysctl -p
