@@ -45,6 +45,7 @@ sudo swapoff -a
 sudo sh -c "echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled"
 
 # Disable iptables, NAT has overhead
+# This might fail if module is statiscally compiled into kernel
 sudo modprobe -rv ip_tables
 
 # RSS
