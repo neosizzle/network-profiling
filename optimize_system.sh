@@ -14,7 +14,7 @@ sudo ethtool -G $adapter rx 16384 # this value is AWS max size, we got 1024 by d
 # When a network card receives packets and before the kernel protocol stack processes them, the kernel stores these packets in backlog queues. The kernel maintains a separate queue for each CPU core.
 # If the backlog queue for a core is full, the kernel drops all further incoming packets that the netif_receive_skb() kernel function assigns to this queue. If the server contains a 10 Gbps or faster network adapter or multiple 1 Gbps adapters, tune the backlog queue size to avoid this problem.
 # Only improvment on server ? 
-sudo echo "net.core.netdev_max_backlog = 2000" > /etc/sysctl.d/10-netdev_max_backlog.conf
+sudo sh -c "echo 'net.core.netdev_max_backlog = 2000' > /etc/sysctl.d/10-netdev_max_backlog.conf"
 sudo sysctl -p /etc/sysctl.d/10-netdev_max_backlog.conf # default is 1000
 
 # If irqbalance is not running, usually the CPU core 0 handles most of the interrupts, including network packet receives
