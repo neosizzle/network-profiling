@@ -25,7 +25,7 @@ awk '{for (i=1; i<=NF; i++) printf strtonum("0x" $i) (i==NF?"\n":" ")}' /proc/ne
 echo If the counters in the third column of the /proc/net/softnet_stat file increment over time, tune the system
 
 # C-State / consumption states tuning. The higher the state, the more power saving it wants to be.
-cat /sys/module/processor/parameters/max_cstate
+sudo cat /sys/module/processor/parameters/max_cstate
 sudo grubby --update-kernel=ALL --args="intel_idle.max_cstate=0" # default is 8
 
 # Hyper-threading (HT) or Simultaneous multithreading (SMT) is a technology to maximize processor resource usage for workloads with low instructions per cycle (IPC).
