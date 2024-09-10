@@ -28,11 +28,15 @@ echo If the counters in the third column of the /proc/net/softnet_stat file incr
 cat /sys/module/processor/parameters/max_cstate
 sudo grubby --update-kernel=ALL --args="intel_idle.max_cstate=0" # default is 8
 
-# Hyper-threading (HT) or Simultaneous multithreading (SMT) is a technology to maximize processor resource usage for workloads with low instructions per cycle (IPC). Since HT/SMT increases contention on processor resources it’s recommended to turn it off if you want to reduce jitter introduced by contention on processor resources. Disabling HT / SMT has the additional benefit of doubling (in case of 2-way SMT) the effective L1 and L2 cache available to a thread.
+# Hyper-threading (HT) or Simultaneous multithreading (SMT) is a technology to maximize processor resource usage for workloads with low instructions per cycle (IPC).
+# Since HT/SMT increases contention on processor resources it’s recommended to turn it off if you want to reduce jitter introduced by contention on processor resources.
+# Disabling HT / SMT has the additional benefit of doubling (in case of 2-way SMT) the effective L1 and L2 cache available to a thread.
+# However, it may bring some cores offline of the system is HTT unaware, limiting the CPUs we can pin.
+# https://en.wikipedia.org/wiki/Hyper-threading
 # [EXPERIMENTAL]
-sudo echo off > /sys/devices/system/cpu/smt/control
+sudo sh -c "echo off > /sys/devices/system/cpu/smt/control"
 
-# Try to move all kernel threads and workqueues to core 0:
+# Try to move all kernel threads to 0 and workqueues to core 1:
 sudo pgrep -P 2 | sudo xargs -i taskset -p -c 0 {}
 sudo find /sys/devices/virtual/workqueue -name cpumask  -exec sh -c 'echo 1 > {}' ';'
 
