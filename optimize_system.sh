@@ -7,9 +7,10 @@ echo -n "Please enter adapter name: "
 read adapter
 
 # Increase NIC and driver ring buffer size to prevent drop rate
-# ethtool -S $adapter
+# ethtool -S $adapter # to check drop rate
 # ethtool -g $adapter # to verify
-sudo ethtool -G $adapter rx 16384 # this value is AWS max size, we got 1024 by default
+# We never hit drop, so this is not needed
+# sudo ethtool -G $adapter rx 16384 # this value is AWS max size, we got 1024 by default
 
 # When a network card receives packets and before the kernel protocol stack processes them, the kernel stores these packets in backlog queues. The kernel maintains a separate queue for each CPU core.
 # If the backlog queue for a core is full, the kernel drops all further incoming packets that the netif_receive_skb() kernel function assigns to this queue. If the server contains a 10 Gbps or faster network adapter or multiple 1 Gbps adapters, tune the backlog queue size to avoid this problem.
@@ -24,10 +25,6 @@ sudo sysctl -p /etc/sysctl.d/10-netdev_max_backlog.conf # default is 1000
 awk '{for (i=1; i<=NF; i++) printf strtonum("0x" $i) (i==NF?"\n":" ")}' /proc/net/softnet_stat | column -t
 echo If the counters in the third column of the /proc/net/softnet_stat file increment over time, tune the system
 
-# C-State / consumption states tuning. The higher the state, the more power saving it wants to be.
-sudo cat /sys/module/processor/parameters/max_cstate
-sudo grubby --update-kernel=ALL --args="intel_idle.max_cstate=0" # default is 8
-
 # Hyper-threading (HT) or Simultaneous multithreading (SMT) is a technology to maximize processor resource usage for workloads with low instructions per cycle (IPC).
 # Since HT/SMT increases contention on processor resources it’s recommended to turn it off if you want to reduce jitter introduced by contention on processor resources.
 # Disabling HT / SMT has the additional benefit of doubling (in case of 2-way SMT) the effective L1 and L2 cache available to a thread.
@@ -41,6 +38,7 @@ sudo pgrep -P 2 | sudo xargs -i taskset -p -c 0 {}
 sudo find /sys/devices/virtual/workqueue -name cpumask  -exec sh -c 'echo 1 > {}' ';'
 
 # disable swap to reduce pagefaults
+# we dont hit swap by default
 sudo swapoff -a
 
 # disable TLB, which makes kernel not promote normal pages into huge pages
@@ -68,6 +66,7 @@ sudo ethtool -C $adapter tx-usecs 256
 # ip addr change $( ip -4 addr show dev eth0 | grep 'inet' | awk '{ print $2 " brd " $4 " scope global"}') dev eth0 valid_lft forever preferred_lft forever
 
 # disable syscall auditing
+# this is already or default during benchmarking
 # sudo echo "-a never,task" > /etc/audit/rules.d/disable-syscall-auditing.rules
 sudo sh -c "echo '-D -a never,task' > /etc/audit/rules.d/audit.rules"
 sudo /sbin/augenrules --load
