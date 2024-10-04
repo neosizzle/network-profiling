@@ -31,7 +31,7 @@ echo If the counters in the third column of the /proc/net/softnet_stat file incr
 # However, it may bring some cores offline of the system is HTT unaware, limiting the CPUs we can pin.
 # https://en.wikipedia.org/wiki/Hyper-threading
 # [EXPERIMENTAL]
-sudo sh -c "echo off > /sys/devices/system/cpu/smt/control"
+# sudo sh -c "echo off > /sys/devices/system/cpu/smt/control"
 
 # Try to move all kernel threads to 0 and workqueues to core 1:
 sudo pgrep -P 2 | sudo xargs -i taskset -p -c 0 {}

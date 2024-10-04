@@ -16,8 +16,3 @@ sudo sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/\"\(.*\)\"/\"\1 processor.max_csta
 sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 echo "Please reboot instance to apply kernel parameters"
 
-sudo sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/\"\(.*\)\"/\"\1 isolcpus=0-1\"/" /etc/default/grub
-sudo grub2-mkconfig -o /boot/grub2/grub.cfg
-
-
-sudo sed "s/isolcpus=[0-9]*\(-[0-9]*\)\?/isolcpus=REPLACEMENT/g" /etc/default/grub

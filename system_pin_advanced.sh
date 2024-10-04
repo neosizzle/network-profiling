@@ -5,15 +5,22 @@ amend_isolcpu_and_exit() {
 	local desired_isolcpus_mask=$1
 
 	local isolcpu_param="$desired_isolcpus_mask"
+	local nohz_full_param="$desired_isolcpus_mask"
+	local rcu_nocbs_param="$desired_isolcpus_mask"
 
 	echo "Current isolcpu setting is incorrect, making changes.."
 
 	# check if isolcpu option already exists
-	if sudo grep -q "isolcpus" /etc/default/grub; then
-		# sudo sed "s/isolcpus=[0-9]*\(-[0-9]*\)\?/isolcpus=$isolcpu_param/g" /etc/default/grub
-		sudo sed -i "s/isolcpus=[0-9]*\(-[0-9]*\)\?\(\,[0-9]*\(-[0-9]*\)\?\)*\?/isolcpus=$isolcpu_param/g" /etc/default/grub
+	# if  sudo grep -q "isolcpus" /etc/default/grub && sudo grep -q "nohz_full" /etc/default/grub && sudo grep -q "rcu_nocbs" /etc/default/grub ; then
+	if sudo grep -q "isolcpus" /etc/default/grub ; then
+		sudo sed "s/isolcpus=[0-9]*\(-[0-9]*\)\?/isolcpus=$isolcpu_param/g" /etc/default/grub
+		# sudo sed -i "s/isolcpus=[0-9]*\(-[0-9]*\)\?\(\,[0-9]*\(-[0-9]*\)\?\)*\?/isolcpus=$isolcpu_param/g" /etc/default/grub
+		# sudo sed -i "s/nohz_full=[0-9]*\(-[0-9]*\)\?\(\,[0-9]*\(-[0-9]*\)\?\)*\?/nohz_full=$nohz_full_param/g" /etc/default/grub
+		# sudo sed -i "s/rcu_nocbs=[0-9]*\(-[0-9]*\)\?\(\,[0-9]*\(-[0-9]*\)\?\)*\?/rcu_nocbs=$rcu_nocbs_param/g" /etc/default/grub
 	else
-	 	sudo sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/\"\(.*\)\"/\"\1 isolcpus=$isolcpu_param\"/" /etc/default/grub
+	 	# sudo sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/\"\(.*\)\"/\"\1 isolcpus=$isolcpu_param nohz_full=$nohz_full_param rcu_nocbs=$rcu_nocbs_param \"/" /etc/default/grub
+		sudo sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/\"\(.*\)\"/\"\1 isolcpus=$isolcpu_param \"/" /etc/default/grub
+
 	fi
 	echo "Changes are made, please update grub and reboot"
 	exit
